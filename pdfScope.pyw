@@ -54,10 +54,14 @@ class MyFrame(wx.Frame):
         self.quitItem = wx.MenuItem(wxglade_tmp_menu, wx.ID_EXIT, "Quit", "Quit application", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.quitItem)
         self.Frame_Main_Menubar.Append(wxglade_tmp_menu, "File")
+
         wxglade_tmp_menu = wx.Menu()
-        self.viewItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "View", "", wx.ITEM_NORMAL)
+        self.viewItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "View", "View an object", wx.ITEM_NORMAL)
+        self.refItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Reference", "View objects referencing an object", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.viewItem)
+        wxglade_tmp_menu.AppendItem(self.refItem)
         self.Frame_Main_Menubar.Append(wxglade_tmp_menu, "Object")
+
         wxglade_tmp_menu = wx.Menu()
         self.pdfItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Filtered Text", "View Filtered Text", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.pdfItem)
@@ -66,13 +70,17 @@ class MyFrame(wx.Frame):
         self.stringsItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Extracted Strings", "", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.stringsItem)
         self.Frame_Main_Menubar.Append(wxglade_tmp_menu, "View")
+
         self.SetMenuBar(self.Frame_Main_Menubar)
         # Menu Bar end
         
         # Menu events
         self.Bind(wx.EVT_MENU, self.OnQuit,id=wx.ID_EXIT) 
         self.Bind(wx.EVT_MENU, self.OnOpen,id=wx.ID_OPEN)
+        
         self.Bind(wx.EVT_MENU, self.objDialog,self.viewItem)
+        self.Bind(wx.EVT_MENU, self.refDialog,self.refItem)
+        
         self.Bind(wx.EVT_MENU, self.viewFiltered,self.pdfItem)
         self.Bind(wx.EVT_MENU, self.viewHex,self.hexItem)
         self.Bind(wx.EVT_MENU, self.viewStrings,self.stringsItem)
@@ -85,7 +93,7 @@ class MyFrame(wx.Frame):
 
     def __set_properties(self):
         # begin wxGlade: MyFrame.__set_properties
-        self.SetTitle("PDFScope v0.5.1 by Frank J Bruzzaniti (frank.bruzzaniti@gmail.com)")
+        self.SetTitle("PDFScope v0.6 by Frank J Bruzzaniti (frank.bruzzaniti@gmail.com)")
         self.SetSize((1200, 600))
         # end wxGlade
 
@@ -157,6 +165,13 @@ class MyFrame(wx.Frame):
         dlg = wx.TextEntryDialog(self, 'Enter the object number you wish to view')
         if dlg.ShowModal() == wx.ID_OK:
             print self.viewObject(dlg.GetValue())
+            dlg.Destroy()
+
+    # Ask user for obj number to view    
+    def refDialog(self, event):
+        dlg = wx.TextEntryDialog(self, 'Enter target object number, returns objects refrencing target')
+        if dlg.ShowModal() == wx.ID_OK:
+            print self.viewRef(dlg.GetValue())
             dlg.Destroy() 
     
     # On open of file, run scripts and display results
@@ -211,6 +226,13 @@ class MyFrame(wx.Frame):
         for line in pr.stdout.readlines():
             lst_results.append(line)
         self.popupDialog(''.join(lst_results), 'Object ' + obj_num)
+
+    def viewRef(self, obj_num):
+        pr = subprocess.Popen('pdf-parser.py -f --raw -r ' + obj_num + ' ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        lst_results = []
+        for line in pr.stdout.readlines():
+            lst_results.append(line)
+        self.popupDialog(''.join(lst_results), 'Objects Referencing Object ' + obj_num)
 
     # Runs pdf-parser extracting filtered text with pdf-parser -f --raw
     def viewFiltered(self, e):
