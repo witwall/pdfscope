@@ -93,7 +93,7 @@ class MyFrame(wx.Frame):
 
     def __set_properties(self):
         # begin wxGlade: MyFrame.__set_properties
-        self.SetTitle("PDFScope v0.6 by Frank J Bruzzaniti (frank.bruzzaniti@gmail.com)")
+        self.SetTitle("PDFScope v0.6.1 by Frank J Bruzzaniti (frank.bruzzaniti@gmail.com)")
         self.SetSize((1200, 600))
         # end wxGlade
 
@@ -162,7 +162,7 @@ class MyFrame(wx.Frame):
 
     # Ask user for obj number to view    
     def objDialog(self, event):
-        dlg = wx.TextEntryDialog(self, 'Enter the object number you wish to view')
+        dlg = wx.TextEntryDialog(self, 'Enter the number of the object, returns filtered object')
         if dlg.ShowModal() == wx.ID_OK:
             print self.viewObject(dlg.GetValue())
             dlg.Destroy()
