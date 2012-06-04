@@ -45,6 +45,8 @@ class MyFrame(wx.Frame):
         self.text_ctrl_RichMedia = wx.TextCtrl(self.notebook_1_RichMedia, -1, "", style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
         self.notebook_1_Launch = wx.Panel(self.notebook_1, -1)
         self.text_ctrl_Launch = wx.TextCtrl(self.notebook_1_Launch, -1, "", style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
+        self.notebook_1_EmbeddedFile = wx.Panel(self.notebook_1, -1)
+        self.text_ctrl_EmbeddedFile = wx.TextCtrl(self.notebook_1_EmbeddedFile, -1, "", style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
         
         # Menu Bar
         self.Frame_Main_Menubar = wx.MenuBar()
@@ -56,11 +58,18 @@ class MyFrame(wx.Frame):
         self.Frame_Main_Menubar.Append(wxglade_tmp_menu, "File")
 
         wxglade_tmp_menu = wx.Menu()
-        self.viewItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "View", "View an object", wx.ITEM_NORMAL)
-        self.refItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Reference", "View objects referencing an object", wx.ITEM_NORMAL)
+        self.viewItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "View [pdf-parser -fwo]", "View an object", wx.ITEM_NORMAL)
+        self.refItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Reference [pdf-parser -r]", "View objects referencing an object", wx.ITEM_NORMAL)
+        self.dmpItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Dump Stream [pdf-parser -d]", "Save object stream to disk", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.viewItem)
         wxglade_tmp_menu.AppendItem(self.refItem)
+        wxglade_tmp_menu.AppendItem(self.dmpItem)
         self.Frame_Main_Menubar.Append(wxglade_tmp_menu, "Object")
+
+        wxglade_tmp_menu = wx.Menu()
+        self.disarmItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Disarm [pdfid -d]", "View an object", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.AppendItem(self.disarmItem)
+        self.Frame_Main_Menubar.Append(wxglade_tmp_menu, "PDF")
 
         wxglade_tmp_menu = wx.Menu()
         self.pdfItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Filtered Text", "View Filtered Text", wx.ITEM_NORMAL)
@@ -75,15 +84,18 @@ class MyFrame(wx.Frame):
         # Menu Bar end
         
         # Menu events
-        self.Bind(wx.EVT_MENU, self.OnQuit,id=wx.ID_EXIT) 
-        self.Bind(wx.EVT_MENU, self.OnOpen,id=wx.ID_OPEN)
+        self.Bind(wx.EVT_MENU, self.OnQuit,id=wx.ID_EXIT)  #File..Quit 
+        self.Bind(wx.EVT_MENU, self.OnOpen,id=wx.ID_OPEN)  #File..Open
         
-        self.Bind(wx.EVT_MENU, self.objDialog,self.viewItem)
-        self.Bind(wx.EVT_MENU, self.refDialog,self.refItem)
-        
-        self.Bind(wx.EVT_MENU, self.viewFiltered,self.pdfItem)
-        self.Bind(wx.EVT_MENU, self.viewHex,self.hexItem)
-        self.Bind(wx.EVT_MENU, self.viewStrings,self.stringsItem)
+        self.Bind(wx.EVT_MENU, self.objDialog,self.viewItem) #Object..View
+        self.Bind(wx.EVT_MENU, self.refDialog,self.refItem) #Object..Reference
+        self.Bind(wx.EVT_MENU, self.dmpDialog,self.dmpItem) #Object..Dump Stream
+
+        self.Bind(wx.EVT_MENU, self.disarmRef,self.disarmItem) #PDF..Disarm
+
+        self.Bind(wx.EVT_MENU, self.viewFiltered,self.pdfItem) #View..Filtered
+        self.Bind(wx.EVT_MENU, self.viewHex,self.hexItem) #View..Hex
+        self.Bind(wx.EVT_MENU, self.viewStrings,self.stringsItem) #View..Strings
         # end Menu events
 
         self.__set_properties()
@@ -93,13 +105,14 @@ class MyFrame(wx.Frame):
 
     def __set_properties(self):
         # begin wxGlade: MyFrame.__set_properties
-        self.SetTitle("PDFScope v0.6.1 by Frank J Bruzzaniti (frank.bruzzaniti@gmail.com)")
+        self.SetTitle("PDFScope v0.6.2 by Frank J Bruzzaniti (frank.bruzzaniti@gmail.com)")
         self.SetSize((1200, 600))
         # end wxGlade
 
     def __do_layout(self):
         # begin wxGlade: MyFrame.__do_layout
         Sizer_Main = wx.BoxSizer(wx.VERTICAL)
+        sizer_1_EmbeddedFile = wx.BoxSizer(wx.VERTICAL)
         sizer_1_Launch = wx.BoxSizer(wx.VERTICAL)
         sizer_1_RichMedia = wx.BoxSizer(wx.VERTICAL)
         sizer_1_JBIG2Decode = wx.BoxSizer(wx.VERTICAL)
@@ -136,6 +149,8 @@ class MyFrame(wx.Frame):
         self.notebook_1_RichMedia.SetSizer(sizer_1_RichMedia)
         sizer_1_Launch.Add(self.text_ctrl_Launch, 1, wx.EXPAND, 0)
         self.notebook_1_Launch.SetSizer(sizer_1_Launch)
+        sizer_1_EmbeddedFile.Add(self.text_ctrl_EmbeddedFile, 1, wx.EXPAND, 0)
+        self.notebook_1_EmbeddedFile.SetSizer(sizer_1_EmbeddedFile)
         self.notebook_1.AddPage(self.notebook_1_PDFiD, "PDFiD")
         self.notebook_1.AddPage(self.notebook_1_Page, "/Page")
         self.notebook_1.AddPage(self.notebook_1_Encrypt, "/Encrypt")
@@ -148,6 +163,7 @@ class MyFrame(wx.Frame):
         self.notebook_1.AddPage(self.notebook_1_JBIG2Decode, "/JBIG2Decode")
         self.notebook_1.AddPage(self.notebook_1_RichMedia, "/RichMedia")
         self.notebook_1.AddPage(self.notebook_1_Launch, "/Launch")
+        self.notebook_1.AddPage(self.notebook_1_EmbeddedFile, "/EmbeddedFile")
         Sizer_Main.Add(self.notebook_1, 1, wx.EXPAND, 0)
         self.SetSizer(Sizer_Main)
         self.Layout()
@@ -172,7 +188,21 @@ class MyFrame(wx.Frame):
         dlg = wx.TextEntryDialog(self, 'Enter target object number, returns objects refrencing target')
         if dlg.ShowModal() == wx.ID_OK:
             print self.viewRef(dlg.GetValue())
-            dlg.Destroy() 
+            dlg.Destroy()
+
+    # Ask user for obj number to view    
+    def dmpDialog(self, event):
+        dlg = wx.TextEntryDialog(self, 'Enter object number (object to dump)')
+        if dlg.ShowModal() == wx.ID_OK:
+            obj_num = dlg.GetValue()
+            dlg.Destroy()
+
+        dlg = wx.TextEntryDialog(self, 'Enter filename, saves stream to file')
+        if dlg.ShowModal() == wx.ID_OK:
+            file_name = dlg.GetValue()
+            dlg.Destroy()
+        
+        self.dmpRef(obj_num,file_name)
     
     # On open of file, run scripts and display results
     def OnOpen(self, e):
@@ -194,13 +224,14 @@ class MyFrame(wx.Frame):
             self.text_ctrl_JBIG2Decode.SetValue(self.pdf_parser('/JBIG2Decode'))
             self.text_ctrl_RichMedia.SetValue(self.pdf_parser('/RichMedia'))
             self.text_ctrl_Launch.SetValue(self.pdf_parser('/Launch'))
+            self.text_ctrl_EmbeddedFile.SetValue(self.pdf_parser('/EmbeddedFile'))
           
             
         dialog.Destroy()
         
     # runs PDFiD.py and checksums.py
     def PDFiD(self):
-        pr1 = subprocess.Popen('pdfid.py ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        pr1 = subprocess.Popen('pdfid.py -f ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         pr2 = subprocess.Popen('checksums.py ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         lst_results = []
         for line in pr1.stdout.readlines():
@@ -233,6 +264,20 @@ class MyFrame(wx.Frame):
         for line in pr.stdout.readlines():
             lst_results.append(line)
         self.popupDialog(''.join(lst_results), 'Objects Referencing Object ' + obj_num)
+
+    def dmpRef(self, obj_num, file_name):
+        pr = subprocess.Popen('pdf-parser.py -o ' + obj_num + ' -f -d ' + file_name + ' ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        lst_results = []
+        for line in pr.stdout.readlines():
+            lst_results.append(line)
+        self.popupDialog('Object stream ' + obj_num + ' saved as ' + file_name, 'Stream Dump')
+
+    def disarmRef(self, e):
+        pr = subprocess.Popen('pdfid.py -d ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        lst_results = []
+        for line in pr.stdout.readlines():
+            lst_results.append(line)
+        self.popupDialog('Disarmed PDF saved as ' + os.path.splitext(self.pdf_path)[0] + '.disarmed.pdf', self.pdf_path + ' Disarmed')
 
     # Runs pdf-parser extracting filtered text with pdf-parser -f --raw
     def viewFiltered(self, e):
