@@ -60,13 +60,15 @@ class MyFrame(wx.Frame):
         wxglade_tmp_menu = wx.Menu()
         self.viewItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "View [pdf-parser -fwo]", "View an object", wx.ITEM_NORMAL)
         self.refItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Reference [pdf-parser -r]", "View objects referencing an object", wx.ITEM_NORMAL)
-        self.dmpItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Dump Stream [pdf-parser -d]", "Save object stream to disk", wx.ITEM_NORMAL)
+        self.saveItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Save [pdf-parser -fwo <obj> > file]", "Save object stream to disk", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.viewItem)
         wxglade_tmp_menu.AppendItem(self.refItem)
-        wxglade_tmp_menu.AppendItem(self.dmpItem)
+        wxglade_tmp_menu.AppendItem(self.saveItem)
         self.Frame_Main_Menubar.Append(wxglade_tmp_menu, "Object")
 
         wxglade_tmp_menu = wx.Menu()
+        self.extractItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Extract File [pdfid -x]", "Extract file from PDF", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.AppendItem(self.extractItem)
         self.disarmItem = wx.MenuItem(wxglade_tmp_menu, wx.NewId(), "Disarm [pdfid -d]", "View an object", wx.ITEM_NORMAL)
         wxglade_tmp_menu.AppendItem(self.disarmItem)
         self.Frame_Main_Menubar.Append(wxglade_tmp_menu, "PDF")
@@ -89,9 +91,11 @@ class MyFrame(wx.Frame):
         
         self.Bind(wx.EVT_MENU, self.objDialog,self.viewItem) #Object..View
         self.Bind(wx.EVT_MENU, self.refDialog,self.refItem) #Object..Reference
-        self.Bind(wx.EVT_MENU, self.dmpDialog,self.dmpItem) #Object..Dump Stream
+        self.Bind(wx.EVT_MENU, self.saveDialog,self.saveItem) #Object..SavesaveItem
 
+        self.Bind(wx.EVT_MENU, self.extractDialog,self.extractItem) #PDF .. Extract file
         self.Bind(wx.EVT_MENU, self.disarmRef,self.disarmItem) #PDF..Disarm
+
 
         self.Bind(wx.EVT_MENU, self.viewFiltered,self.pdfItem) #View..Filtered
         self.Bind(wx.EVT_MENU, self.viewHex,self.hexItem) #View..Hex
@@ -105,7 +109,7 @@ class MyFrame(wx.Frame):
 
     def __set_properties(self):
         # begin wxGlade: MyFrame.__set_properties
-        self.SetTitle("PDFScope v0.6.2 by Frank J Bruzzaniti (frank.bruzzaniti@gmail.com)")
+        self.SetTitle("PDFScope v0.6.4 by Frank J Bruzzaniti (frank.bruzzaniti@gmail.com)")
         self.SetSize((1200, 600))
         # end wxGlade
 
@@ -190,19 +194,27 @@ class MyFrame(wx.Frame):
             print self.viewRef(dlg.GetValue())
             dlg.Destroy()
 
+    # Ask user for file to extract    
+    def extractDialog(self, event):
+        dlg = wx.TextEntryDialog(self, 'Save extracted file as ...')
+        if dlg.ShowModal() == wx.ID_OK:
+            print self.extractRef(dlg.GetValue())
+            dlg.Destroy()
+
     # Ask user for obj number to view    
-    def dmpDialog(self, event):
-        dlg = wx.TextEntryDialog(self, 'Enter object number (object to dump)')
+    def saveDialog(self, event):
+        dlg = wx.TextEntryDialog(self, 'Enter object number (object to save)')
         if dlg.ShowModal() == wx.ID_OK:
             obj_num = dlg.GetValue()
             dlg.Destroy()
 
-        dlg = wx.TextEntryDialog(self, 'Enter filename, saves stream to file')
+        dlg = wx.TextEntryDialog(self, 'Enter filename, saves object to file')
+        dlg.SetValue(os.path.basename(self.pdf_path) + '-obj' + obj_num + '.txt')
         if dlg.ShowModal() == wx.ID_OK:
             file_name = dlg.GetValue()
             dlg.Destroy()
         
-        self.dmpRef(obj_num,file_name)
+        self.saveRef(obj_num,file_name)
     
     # On open of file, run scripts and display results
     def OnOpen(self, e):
@@ -225,7 +237,6 @@ class MyFrame(wx.Frame):
             self.text_ctrl_RichMedia.SetValue(self.pdf_parser('/RichMedia'))
             self.text_ctrl_Launch.SetValue(self.pdf_parser('/Launch'))
             self.text_ctrl_EmbeddedFile.SetValue(self.pdf_parser('/EmbeddedFile'))
-          
             
         dialog.Destroy()
         
@@ -238,8 +249,6 @@ class MyFrame(wx.Frame):
             lst_results.append(line)
         for line in pr2.stdout.readlines():
             lst_results.append(line)
-        #retval = pr.wait()
-        #t = wx.StaticText(self.page1, -1, ''.join(lst_results), (20,20))
         self.text_ctrl_PDFiD.SetValue(''.join(lst_results))
 
     # Runs pdf-parser.py with search argument and returns console output
@@ -265,18 +274,16 @@ class MyFrame(wx.Frame):
             lst_results.append(line)
         self.popupDialog(''.join(lst_results), 'Objects Referencing Object ' + obj_num)
 
-    def dmpRef(self, obj_num, file_name):
-        pr = subprocess.Popen('pdf-parser.py -o ' + obj_num + ' -f -d ' + file_name + ' ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        lst_results = []
-        for line in pr.stdout.readlines():
-            lst_results.append(line)
-        self.popupDialog('Object stream ' + obj_num + ' saved as ' + file_name, 'Stream Dump')
+    def saveRef(self, obj_num, file_name):
+        pr = subprocess.Popen('pdf-parser.py -fwo ' + obj_num + ' > ' + file_name + ' ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.popupDialog('Object ' + obj_num + ' saved as ' + file_name, 'Save Object')
+
+    def extractRef(self, file_name):
+        pr = subprocess.Popen('pdf-parser.py -x ' + file_name + ' ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.popupDialog('Extracted file saved as ' + os.getcwd() + '\\' + file_name, 'Extract File')
 
     def disarmRef(self, e):
         pr = subprocess.Popen('pdfid.py -d ' + self.pdf_path, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        lst_results = []
-        for line in pr.stdout.readlines():
-            lst_results.append(line)
         self.popupDialog('Disarmed PDF saved as ' + os.path.splitext(self.pdf_path)[0] + '.disarmed.pdf', self.pdf_path + ' Disarmed')
 
     # Runs pdf-parser extracting filtered text with pdf-parser -f --raw
@@ -285,7 +292,6 @@ class MyFrame(wx.Frame):
         lst_results = []
         for line in pr.stdout.readlines():
             lst_results.append(line)
-        #print ''.join(lst_results)
         self.popupDialog(''.join(lst_results), 'Filtered Text')
 
     # Runs hexdump.py displaying pdf in hex
